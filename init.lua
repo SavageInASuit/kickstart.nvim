@@ -110,7 +110,7 @@ vim.opt.showmode = false
 -- Sync clipboard between OS and Neovim.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
-vim.opt.clipboard = 'unnamedplus'
+-- vim.opt.clipboard = 'unnamedplus'
 
 -- Enable break indent
 vim.opt.breakindent = true
@@ -161,6 +161,14 @@ vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagn
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
+-- Map jk in insert mode to escape
+vim.keymap.set('i', 'jk', '<Esc>', { desc = 'Escape from insert mode' })
+
+-- Delete rest of line and enter insert mode
+vim.keymap.set('n', 'dl', 'Da', { desc = 'Delete rest of line' })
+
+-- This is just a test
+
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
 -- is not what someone will guess without a bit more experience.
@@ -179,10 +187,10 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 --  Use CTRL+<hjkl> to switch between windows
 --
 --  See `:help wincmd` for a list of all window commands
-vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
-vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
-vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+-- vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
+-- vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
+-- vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
+-- vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -206,6 +214,45 @@ vim.cmd [[
   augroup END
 ]]
 
+vim.cmd [[
+  augroup JSSettings
+    autocmd!
+    autocmd FileType javascript setlocal tabstop=2 shiftwidth=2 expandtab
+  augroup END
+]]
+vim.cmd [[
+  augroup CSSSettings
+    autocmd!
+    autocmd FileType css setlocal tabstop=2 shiftwidth=2 expandtab
+  augroup END
+]]
+
+vim.cmd [[
+  augroup LuaSettings
+    autocmd!
+    autocmd FileType lua setlocal tabstop=2 shiftwidth=2 expandtab
+  augroup END
+]]
+
+-- Turn on spellchecking in markdown files
+vim.cmd [[
+  augroup MarkdownSettings
+    autocmd!
+    autocmd FileType markdown setlocal spell
+  augroup END
+]]
+
+-- Create a command to run `npm test` in the current directory
+vim.api.nvim_command [[
+  command! NTest :!npm test
+]]
+-- Create a command to open a terminal buffer and run `npm run start` in the current directory
+vim.api.nvim_command [[
+  command! NStart :terminal npm run start
+]]
+
+require('config.keymaps')
+
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -228,20 +275,21 @@ vim.opt.rtp:prepend(lazypath)
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup {
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  {
-    'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
-    config = function()
-      vim.api.nvim_create_autocmd('FileType', {
-        pattern = 'php',
-        callback = function()
-          vim.g.sleuth_automatic = 0
-          vim.bo.tabstop = 4
-          vim.bo.shiftwidth = 4
-          vim.bo.expandtab = true
-        end,
-      })
-    end,
-  },
+  -- {
+  --   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  --   config = function()
+  --     vim.api.nvim_create_autocmd('FileType', {
+  --       pattern = 'php',
+  --       callback = function()
+  --         vim.g.sleuth_automatic = 0
+  --         vim.bo.tabstop = 4
+  --         vim.bo.shiftwidth = 4
+  --         vim.bo.expandtab = true
+  --       end,
+  --     })
+  --   end,
+  -- },
+    'jasonwoodland/vim-html-indent',
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
   -- keys can be used to configure plugin behavior/loading/etc.
@@ -348,6 +396,7 @@ require('lazy').setup {
           require('telescope').load_extension 'frecency'
         end,
       },
+      "nvim-telescope/telescope-live-grep-args.nvim",
     },
     config = function()
       -- Telescope is a fuzzy finder that comes with a lot of different things that
@@ -371,6 +420,8 @@ require('lazy').setup {
 
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
+
+      local lga_actions = require("telescope-live-grep-args.actions")
       require('telescope').setup {
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
@@ -385,6 +436,20 @@ require('lazy').setup {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
           },
+          live_grep_args = {
+            auto_quoting = true, -- enable/disable auto-quoting
+            -- define mappings, e.g.
+            mappings = { -- extend mappings
+              i = {
+                ["<C-k>"] = lga_actions.quote_prompt(),
+                ["<C-i>"] = lga_actions.quote_prompt({ postfix = " --iglob " }),
+              },
+            },
+            -- ... also accepts theme settings, for example:
+            -- theme = "dropdown", -- use dropdown theme
+            -- theme = { }, -- use own theme spec
+            -- layout_config = { mirror=true }, -- mirror preview pane
+          }
         },
       }
 
@@ -392,6 +457,9 @@ require('lazy').setup {
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
       pcall(require('telescope').load_extension, 'fugitive')
+      pcall(require('telescope').load_extension, 'live_grep_args')
+
+      local lga = require('telescope').extensions.live_grep_args
 
       -- See `:help telescope.builtin`
       local builtin = require 'telescope.builtin'
@@ -401,7 +469,7 @@ require('lazy').setup {
       vim.keymap.set('n', '<leader>ff', '<Cmd>Telescope frecency workspace=CWD<CR>', { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+      vim.keymap.set('n', '<leader>sg', lga.live_grep_args, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
@@ -577,7 +645,7 @@ require('lazy').setup {
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`tsserver`) will work just fine
-        -- tsserver = {},
+        tsserver = {},
         --
         eslint = {},
         intelephense = {},
@@ -657,6 +725,7 @@ require('lazy').setup {
         -- is found.
         php = { { 'php_cs_fixer' } },
         javascript = { { 'prettierd', 'prettier' } },
+        typescript = { { 'prettierd', 'prettier' } },
       },
     },
     config = function()
@@ -780,7 +849,7 @@ require('lazy').setup {
       -- vim.cmd.colorscheme 'tokyonight-night'
 
       -- You can configure highlights by doing something like
-      vim.cmd.hi 'Comment gui=none'
+      -- vim.cmd.hi 'Comment gui=none'
     end,
   },
   {
@@ -790,6 +859,13 @@ require('lazy').setup {
     config = function()
       vim.cmd.colorscheme 'catppuccin-macchiato'
     end,
+  },
+
+  {
+    'wadackel/vim-dogrun',
+    config = function()
+      -- vim.cmd.colorscheme 'dogrun'
+    end
   },
 
   {
@@ -850,7 +926,7 @@ require('lazy').setup {
 
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup {
-        ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'php' },
+        ensure_installed = { 'bash', 'c', 'html', 'markdown', 'lua', 'vim', 'vimdoc', 'php', 'javascript' },
         -- Autoinstall languages that are not installed
         auto_install = true,
         highlight = { enable = true },
@@ -865,8 +941,18 @@ require('lazy').setup {
       --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
     end,
   },
-
-  'github/copilot.vim',
+  {
+    'github/copilot.vim',
+    config = function()
+      -- disable when in markdown files
+      vim.api.nvim_create_autocmd('BufEnter', {
+        pattern = '*.md',
+        callback = function()
+          vim.cmd.Copilot 'disable'
+        end,
+      })
+    end,
+  },
   {
     'chentoast/marks.nvim',
     lazy = false,
@@ -894,6 +980,14 @@ require('lazy').setup {
       end)
     end,
   },
+  {
+    'lervag/wiki.vim',
+    config = function()
+      vim.g.wiki_root = '~/wiki'
+
+      vim.keymap.set('n', '<leader>wj', '<Cmd>WikiJournal<CR>', { desc = 'Open Journal' })
+    end,
+  },
 
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
@@ -912,7 +1006,7 @@ require('lazy').setup {
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
 }
 
 -- The line beneath this is called `modeline`. See `:help modeline`
